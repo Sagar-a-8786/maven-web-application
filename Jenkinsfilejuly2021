@@ -1,0 +1,58 @@
+pipeline{
+	agent any
+	tools{
+	maven "maven3.8.3"
+	}
+    options{
+	timestamps()
+	buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '5', daysToKeepStr: '', numToKeepStr: '5'))
+	}
+	triggers{
+	pollSCM('* * * * *')
+	}
+	stages{
+
+	stage('pullthecode'){
+		steps{git branch: 'development', credentialsId: '9c1141a4-567e-44ab-a289-93a687040fe2', url: 'https://github.com/Sagar-a-8786/maven-web-application.git'
+	}
+	}
+	stage('build'){
+	steps{sh "mvn clean package"
+	}
+	}
+	stage('codecoverage'){
+	steps{sh "mvn clean sonar:sonar"
+	}
+	}
+	stage('artifactrepo'){
+	steps{sh "mvn clean deploy"
+	}
+	}
+	stage('deploy'){
+	steps{sshagent(['3fda235a-827e-48d5-85fc-55169f7b0b74']) {
+    		sh "scp -o StrictHostKeyChecking=no /var/lib/jenkins/workspace/pipeline-scriptedway/target/maven-web-application.war ec2-user@15.207.87.121:/opt/apache-tomcat-9.0.54/webapps"
+	}
+	}
+	}
+	
+	
+	
+}
+post{
+failure{emailext body: '''build incomplete
+
+		regards,
+		Sagar''', subject: 'build complete', to: 'sagaranand1234567@gmail.com,sagaranand0123456789@gmail.com'
+	}
+	success{emailext body: '''build complete
+
+		regards,
+		Sagar''', subject: 'build complete', to: 'sagaranand1234567@gmail.com,sagaranand0123456789@gmail.com'
+	}
+	always{emailext body: '''build complete
+
+		regards,
+		Sagar''', subject: 'build complete', to: 'sagaranand1234567@gmail.com,sagaranand0123456789@gmail.com'
+	}
+}
+}
